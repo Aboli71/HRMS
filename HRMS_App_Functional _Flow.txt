@@ -1,0 +1,239 @@
+In my own words simple app functional flow step wise  
+Step 1: Sign Up A. UserName 
+                B. Emil-id (Must be valid)
+                C. Phone No. ( Must be valid )
+		D. State
+		E. District (Field District) 
+		F. Taluka (Field Taluka)
+		G. Password (above 6 or at least 6) 
+
+Step 2: Sign In with A. Emai-ID/Mobile No.
+		     B. Password
+
+Step 3: ONce user can login successfully then go to Dashboard 
+
+Step 4: In dashboard open office login form in this form 
+		A. Username (Auto Fill)
+		B. Field Location (Auto Fill only Taluka is show)
+		C. Time ( Current time auto fill )
+		D. Date ( Current time auto Date )
+		E. Get Location (Click on get location then give the app permission then capture the current location once location was capture then show in pop up then click on ok text so captured location show in input lat long box )
+		F. Capture Selfie (Click on capture image then give the app permission then capture the selfie then in pop up show the lat long then click on ok text then captured selfie image show in view image) 
+		G. Submit 
+(user first time submit the login form then submit the logout form by mistecally user can submit log out form that time was consider the leave)
+once user can submit office login form then login time show in time history with date 
+
+Step 5: In dashboard open office logout form in this form
+A. Username (Auto Fill)
+B. Field Location (Auto Fill only Taluka is show)
+C. Time ( Current time auto fill )
+D. Date ( Current time auto Date )
+E. Get Location (Click on get location then give the app permission then capture the current location once location was capture then show in pop up then click on ok text so captured location show in input lat long box )
+F. Capture Selfie (Click on capture image then give the app permission then capture the selfie then in pop up show the lat long then click on ok text then captured selfie image show in view image)
+G. Submit
+once user can submit office logout form then login time, Log out time and total working hours show in time history with date
+
+Step 6: Profile 
+        In Profile A. Username (Auto Fill)
+		   B. Email-id (Auto Fill)
+		   C. Phone No (Auto Fill)
+		   D. State (Auto Fill)
+		   E. District (Auto Fill)
+     		   F. Taluka (Auto Fill)
+                   G. first update the user profile image 
+                   H. then enter the Above Bank details Account Holder Name, Bank Account No, Ifsc Code (User can enter IFSC code proper then auto fill the above fields Bank Name, Bank Branch Name, and MICR No) and select the Account type 
+		   I. Then click on submit once user can submit then show the pop up then click on ok text that time page navigate on dashboard 
+next time user can go profile page that time submit and cancel button not show because profile image and bank details are only one time update 
+
+_______________________________________________________________________________________________________________________________________________________________________
+
+✅ 1. FLOW DIAGRAM (Text-Based)
+
+START
+  |
+  v
+Sign Up
+  |
+  v
+Sign In
+  |
+  v
+Dashboard
+  |
+  |----------------------------|
+  |                            |
+Office Login               Profile
+  |                            |
+Get Location                View Auto-filled Data
+Capture Selfie              Upload Profile Image (One-time)
+Submit Login                 Enter Bank Details (One-time)
+  |                            |
+  v                            |
+Time History Updated          Submit → Popup → Dashboard
+  |
+  v
+Office Logout
+  |
+Get Location
+Capture Selfie
+Submit Logout
+  |
+  v
+Time History Updated
+(Login Time + Logout Time + Total Hours)
+  |
+  v
+END
+
+
+_____________________________________________________________________________________________________________________________________________________________________
+
+📱 HRMS Mobile Application – User Flow & Functional Steps
+Step 1: Sign Up (New User Registration)
+
+The user must complete the following mandatory fields:
+
+A. Username
+B. Email ID (Must be a valid email address)
+C. Phone Number (Must be a valid mobile number)
+D. State
+E. District (Field District)
+F. Taluka (Field Taluka)
+G. Password (Minimum 6 characters)
+
+After filling in all required details, the user can complete the Sign Up process.
+
+Step 2: Sign In
+
+The user can log in using:
+
+A. Email ID or Mobile Number
+B. Password
+
+Step 3: Successful Login
+
+Once the user logs in successfully, the application navigates to the Dashboard screen.
+
+Step 4: Office Login Form (Dashboard → Office Login)
+
+The user opens the Office Login Form from the Dashboard.
+
+Form Fields:
+
+A. Username – Auto-filled
+B. Field Location (Taluka) – Auto-filled (Only Taluka is displayed)
+C. Time – Automatically filled with the current time
+D. Date – Automatically filled with the current date
+E. Get Location
+
+On clicking Get Location, the app requests location permission
+
+Captures the current latitude & longitude
+
+Displays the captured location in a popup
+
+After clicking OK, the latitude and longitude are shown in the input fields
+F. Capture Selfie
+
+On clicking Capture Image, the app requests camera permission
+
+Captures the user’s selfie
+
+Displays latitude & longitude in a popup
+
+After clicking OK, the captured selfie is shown in the image preview
+G. Submit
+
+Important Logic:
+
+If the user mistakenly submits the Logout form first, the system considers it as Leave.
+
+Once the Office Login form is submitted successfully, the Login Time and Date are displayed in the Time History section.
+
+Step 5: Office Logout Form (Dashboard → Office Logout)
+
+After office login, the user can submit the Office Logout Form.
+
+Form Fields:
+
+A. Username – Auto-filled
+B. Field Location (Taluka) – Auto-filled
+C. Time – Automatically filled with the current time
+D. Date – Automatically filled with the current date
+E. Get Location
+
+Requests location permission
+
+Captures current latitude & longitude
+
+Displays location in a popup
+
+On clicking OK, the values are filled in the input fields
+F. Capture Selfie
+
+Requests camera permission
+
+Captures selfie image
+
+Shows latitude & longitude in a popup
+
+On clicking OK, the selfie image is shown in preview
+G. Submit
+
+Result:
+
+After successful logout submission, the following details are shown in Time History:
+
+Login Time
+
+Logout Time
+
+Total Working Hours
+
+Date
+
+Step 6: Profile Section
+
+The user can open the Profile screen from the Dashboard.
+
+Profile Fields:
+
+A. Username – Auto-filled
+B. Email ID – Auto-filled
+C. Phone Number – Auto-filled
+D. State – Auto-filled
+E. District – Auto-filled
+F. Taluka – Auto-filled
+
+Profile Update Process (One-Time Only):
+
+G. Upload Profile Image (Mandatory – One-time update)
+H. Bank Details Entry
+
+Account Holder Name
+
+Bank Account Number
+
+IFSC Code
+On entering a valid IFSC code, the following fields are auto-filled:
+
+Bank Name
+
+Bank Branch Name
+
+MICR Number
+
+Select Account Type
+I. Click Submit
+
+A success popup is displayed
+
+On clicking OK, the user is redirected to the Dashboard
+
+Important Note:
+
+Profile Image and Bank Details can be updated only once
+
+On subsequent visits to the Profile page:
+
+Submit and Cancel buttons will not be visible
