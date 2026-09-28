@@ -826,17 +826,18 @@ import React, { useState, useEffect } from "react";
 import {
   View,
   Text,
-  TouchableOpacity,
   Image,
-  Alert,
-  ScrollView,
+  TouchableOpacity,
   StyleSheet,
-  PermissionsAndroid,
-  Platform,
-  TextInput,
+  ScrollView,
   ActivityIndicator,
-  BackHandler
-} from "react-native";
+  BackHandler,
+  Modal,
+  TextInput,
+  Alert,
+  KeyboardAvoidingView,
+  Platform,
+} from 'react-native';
 
 import LinearGradient from "react-native-linear-gradient";
 import { useNavigation } from "@react-navigation/native";
@@ -1231,22 +1232,22 @@ export default function UserLeave() {
       return;
     }
     // Team Lead
-if (!selectedTeamLead) {
-  missingFields.push("Team Lead");
-}
+    if (!selectedTeamLead) {
+      missingFields.push("Team Lead");
+    }
 
     setLoading(true);
 
     try {
 
       const payload = {
-  user_id: userData.id,
-  subject: subject.trim(),
-  reason: reason.trim(),
-  date: fromApiDate,
-  todate: toApiDate,
-  Team_Lead: selectedTeamLead?.employee_Name,  // ✅ only selected name
-};
+        user_id: userData.id,
+        subject: subject.trim(),
+        reason: reason.trim(),
+        date: fromApiDate,
+        todate: toApiDate,
+        Team_Lead: selectedTeamLead?.employee_Name,  // ✅ only selected name
+      };
 
       console.log("Leave Payload:", payload);
 
@@ -1320,244 +1321,255 @@ if (!selectedTeamLead) {
 
         </View>
 
-        {/* 🔥 FULL PAGE SCROLLS NOW */}
-        <ScrollView
-          showsVerticalScrollIndicator={false}
-          contentContainerStyle={{ paddingBottom: 120 }}
+        {/* 🔥 KEYBOARD AVOIDING VIEW */}
+        <KeyboardAvoidingView
+          style={{ flex: 1 }}
+          behavior={Platform.OS === "ios" ? "padding" : "height"}
+          keyboardVerticalOffset={0}
         >
-          <View style={{ paddingHorizontal: 10, paddingTop: 20, }}>
-            {/* Username */}
-            <Text style={styles.label}>Username<Text style={{ color: 'red' }}> *</Text></Text>
-            <View style={styles.inputBox}>
-              <Image
-                source={require("../../assets/images/Username-32.png")}
-                style={styles.inputIcon}
-              />
-              <TextInput
-                value={userData?.name || ""}
-                editable={false}
-                style={styles.inputText}
-              />
+          {/* 🔥 FULL PAGE SCROLLS NOW */}
+          <ScrollView
+            showsVerticalScrollIndicator={false}
+            contentContainerStyle={{ paddingBottom: 120 }}
+          >
+            <View style={{ paddingHorizontal: 10, paddingTop: 20, }}>
+              {/* Username */}
+              <Text style={styles.label}>Username<Text style={{ color: 'red' }}> *</Text></Text>
+              <View style={styles.inputBox}>
+                <Image
+                  source={require("../../assets/images/Username-32.png")}
+                  style={styles.inputIcon}
+                />
+                <TextInput
+                  value={userData?.name || ""}
+                  editable={false}
+                  style={styles.inputText}
+                />
 
 
-            </View>
+              </View>
 
-            {/* Field Location */}
-            <Text style={styles.label}>Field Location<Text style={{ color: 'red' }}> *</Text></Text>
-            <TouchableOpacity style={styles.inputBox}>
-              <Image source={require("../../assets/images/District-32.png")} style={styles.icon} />
-              <Text style={styles.placeholder}>
-                {userData?.district || "Select Field Location"}
+              {/* Field Location */}
+              <Text style={styles.label}>Field Location<Text style={{ color: 'red' }}> *</Text></Text>
+              <TouchableOpacity style={styles.inputBox}>
+                <Image source={require("../../assets/images/District-32.png")} style={styles.icon} />
+                <Text style={styles.placeholder}>
+                  {userData?.district || "Select Field Location"}
+                </Text>
+
+              </TouchableOpacity>
+
+              {/*Status*/}
+              <Text style={styles.label}>User Status<Text style={{ color: 'red' }}> *</Text></Text>
+
+              <View style={[styles.inputBox, { justifyContent: "space-between" }]}>
+                <View style={{ flexDirection: "row", alignItems: "center" }}>
+
+                  <Text style={styles.placeholder}>Leave</Text>
+                </View>
+              </View>
+
+              {/*Status*/}
+              <Text style={styles.label}>HR Name<Text style={{ color: 'red' }}> *</Text></Text>
+
+              <View style={[styles.inputBox, { justifyContent: "space-between" }]}>
+                <View style={{ flexDirection: "row", alignItems: "center" }}>
+
+                  <Text style={styles.placeholder}>Varsha Rade (HR)</Text>
+                </View>
+              </View>
+
+              {/* Team Leads */}
+              <Text style={styles.label}>
+                Team Leads<Text style={{ color: 'red' }}> *</Text>
               </Text>
 
-            </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.inputBox, { justifyContent: "space-between" }]}
+                onPress={() => setShowTeamLeadDropdown(!showTeamLeadDropdown)}
+              >
+                <Text style={styles.placeholder}>
+                  {selectedTeamLead
+                    ? `${selectedTeamLead.employee_Name} (${selectedTeamLead.employee_Designation})`
+                    : "Select Team Lead"}
+                </Text>
 
-            {/*Status*/}
-            <Text style={styles.label}>User Status<Text style={{ color: 'red' }}> *</Text></Text>
+                <Ionicons
+                  name={showTeamLeadDropdown ? "chevron-up" : "chevron-down"}
+                  size={20}
+                  color="#555"
+                />
+              </TouchableOpacity>
 
-            <View style={[styles.inputBox, { justifyContent: "space-between" }]}>
-              <View style={{ flexDirection: "row", alignItems: "center" }}>
+              {/* Dropdown List */}
+              {showTeamLeadDropdown && (
+                <View
+                  style={{
+                    backgroundColor: "#fff",
+                    borderWidth: 1,
+                    borderColor: "#ddd",
+                    borderRadius: 8,
+                    marginTop: 5,
+                    width: 350,
+                    marginLeft: 20
+                  }}
+                >
+                  {teamLeads.map((item) => (
+                    <TouchableOpacity
+                      key={item.Id}
+                      style={{
+                        padding: 12,
+                        borderBottomWidth: 1,
+                        borderBottomColor: "#eee",
+                      }}
+                      onPress={() => {
+                        setSelectedTeamLead(item);
+                        setShowTeamLeadDropdown(false);
+                      }}
+                    >
+                      <Text>
+                        {item.employee_Name} ({item.employee_Designation})
+                      </Text>
+                    </TouchableOpacity>
+                  ))}
+                </View>
+              )}
 
-                <Text style={styles.placeholder}>Leave</Text>
-              </View>
-            </View>
-
-            {/*Status*/}
-            <Text style={styles.label}>HR Name<Text style={{ color: 'red' }}> *</Text></Text>
-
-            <View style={[styles.inputBox, { justifyContent: "space-between" }]}>
-              <View style={{ flexDirection: "row", alignItems: "center" }}>
-
-                <Text style={styles.placeholder}>Varsha Rade (HR)</Text>
-              </View>
-            </View>
-
-            {/* Team Leads */}
-            <Text style={styles.label}>
-              Team Leads<Text style={{ color: 'red' }}> *</Text>
-            </Text>
-
-            <TouchableOpacity
-              style={[styles.inputBox, { justifyContent: "space-between" }]}
-              onPress={() => setShowTeamLeadDropdown(!showTeamLeadDropdown)}
-            >
-              <Text style={styles.placeholder}>
-                {selectedTeamLead
-                  ? `${selectedTeamLead.employee_Name} (${selectedTeamLead.employee_Designation})`
-                  : "Select Team Lead"}
+              {/* From Date */}
+              <Text style={styles.label}>
+                From Date<Text style={{ color: "red" }}> *</Text>
               </Text>
 
-              <Ionicons
-                name={showTeamLeadDropdown ? "chevron-up" : "chevron-down"}
-                size={20}
-                color="#555"
-              />
-            </TouchableOpacity>
-
-            {/* Dropdown List */}
-            {showTeamLeadDropdown && (
-              <View
-                style={{
-                  backgroundColor: "#fff",
-                  borderWidth: 1,
-                  borderColor: "#ddd",
-                  borderRadius: 8,
-                  marginTop: 5,
-                  width: 350,
-                  marginLeft: 20
+              <TouchableOpacity
+                onPress={() => {
+                  setDatePickerType("from");
+                  setShowDatePicker(true);
                 }}
               >
-                {teamLeads.map((item) => (
-                  <TouchableOpacity
-                    key={item.Id}
-                    style={{
-                      padding: 12,
-                      borderBottomWidth: 1,
-                      borderBottomColor: "#eee",
-                    }}
-                    onPress={() => {
-                      setSelectedTeamLead(item);
-                      setShowTeamLeadDropdown(false);
-                    }}
-                  >
-                    <Text>
-                      {item.employee_Name} ({item.employee_Designation})
-                    </Text>
-                  </TouchableOpacity>
-                ))}
-              </View>
-            )}
+                <View style={styles.inputBox}>
+                  <Text style={styles.placeholder}>
+                    {fromDate || "Select From Date"}
+                  </Text>
+                  <Image
+                    source={require("../../assets/images/Calender-32.png")}
+                    style={{ marginLeft: -55 }}
+                  />
+                </View>
+              </TouchableOpacity>
 
-            {/* From Date */}
-            <Text style={styles.label}>
-              From Date<Text style={{ color: "red" }}> *</Text>
-            </Text>
+              {/* To Date */}
+              <Text style={styles.label}>
+                To Date<Text style={{ color: "red" }}> *</Text>
+              </Text>
 
-            <TouchableOpacity
-              onPress={() => {
-                setDatePickerType("from");
-                setShowDatePicker(true);
-              }}
-            >
-              <View style={styles.inputBox}>
-                <Text style={styles.placeholder}>
-                  {fromDate || "Select From Date"}
-                </Text>
-                <Image
-                  source={require("../../assets/images/Calender-32.png")}
-                  style={{ marginLeft: -55 }}
-                />
-              </View>
-            </TouchableOpacity>
-
-            {/* To Date */}
-            <Text style={styles.label}>
-              To Date<Text style={{ color: "red" }}> *</Text>
-            </Text>
-
-            <TouchableOpacity
-              disabled={!fromDate}
-              onPress={() => {
-                setDatePickerType("to");
-                setShowDatePicker(true);
-              }}
-            >
-              <View
-                style={[
-                  styles.inputBox,
-                  !fromDate && { opacity: 0.5 }
-                ]}
+              <TouchableOpacity
+                disabled={!fromDate}
+                onPress={() => {
+                  setDatePickerType("to");
+                  setShowDatePicker(true);
+                }}
               >
-                <Text style={styles.placeholder}>
-                  {toDate || "Select To Date"}
+                <View
+                  style={[
+                    styles.inputBox,
+                    !fromDate && { opacity: 0.5 }
+                  ]}
+                >
+                  <Text style={styles.placeholder}>
+                    {toDate || "Select To Date"}
+                  </Text>
+                  <Image
+                    source={require("../../assets/images/Calender-32.png")}
+                    style={{ marginLeft: -55 }}
+                  />
+                </View>
+              </TouchableOpacity>
+
+
+              {/* Leave Subjec */}
+              <Text style={{
+                fontSize: scale(15),
+                color: "#333",
+                marginBottom: 6,
+                marginTop: 10,
+                fontWeight: "600",
+                marginLeft: 25
+              }}>Leave Subject<Text style={{ color: 'red' }}> *</Text></Text>
+              <TextInput
+                style={[styles.worksheetInputR, subjectError && { borderColor: "red" }]}
+                value={subject}
+                onChangeText={handleSubjectChange}
+                placeholder="Enter leave subject"
+                placeholderTextColor="#999"
+                multiline
+                textAlignVertical="top"
+              />
+              {subjectError ? (
+                <Text style={{ color: "red", marginLeft: 25, marginTop: 5 }}>
+                  {subjectError}
                 </Text>
-                <Image
-                  source={require("../../assets/images/Calender-32.png")}
-                  style={{ marginLeft: -55 }}
-                />
-              </View>
-            </TouchableOpacity>
+              ) : null}
 
+              {/* Leave Reason */}
+              <Text style={{
+                fontSize: scale(15),
+                color: "#333",
+                marginBottom: 6,
+                marginTop: 10,
+                fontWeight: "600",
+                marginLeft: 25
+              }}>Leave Reason<Text style={{ color: 'red' }}> *</Text></Text>
+              {/* Leave Reason */}
+              <TextInput
+                style={[
+                  styles.worksheetInput,
+                  reasonError && { borderColor: "red" },
+                ]}
+                value={reason}
+                onChangeText={handleReasonChange}
+                placeholder="Enter leave message"
+                placeholderTextColor="#999"
+                multiline
+                textAlignVertical="top"
+                scrollEnabled={true}
+              />
+              {reasonError ? (
+                <Text style={{ color: "red", marginLeft: 25, marginTop: 5 }}>
+                  {reasonError}
+                </Text>
+              ) : null}
+            </View>
 
-            {/* Leave Subjec */}
-            <Text style={{
-              fontSize: scale(15),
-              color: "#333",
-              marginBottom: 6,
-              marginTop: 10,
-              fontWeight: "600",
-              marginLeft: 25
-            }}>Leave Subject<Text style={{ color: 'red' }}> *</Text></Text>
-            <TextInput
-              style={[styles.worksheetInputR, subjectError && { borderColor: "red" }]}
-              value={subject}
-              onChangeText={handleSubjectChange}
-              placeholder="Enter leave subject"
-              placeholderTextColor="#999"
-              multiline
-              textAlignVertical="top"
-            />
-            {subjectError ? (
-              <Text style={{ color: "red", marginLeft: 25, marginTop: 5 }}>
-                {subjectError}
-              </Text>
-            ) : null}
+            {/* Buttons */}
+            <View style={styles.btnRow}>
+              {/* Submit Button */}
+              <TouchableOpacity
+                style={[styles.submitBtn, loading && { opacity: 0.6 }]}
+                onPress={submitAttendance}
+                disabled={loading}
+              >
+                <View style={styles.btnContent}>
+                  <Image
+                    source={require("../../assets/images/Submit-32.png")}
+                    style={styles.btnIcon}
+                  />
+                  <Text style={styles.submitText}>Submit</Text>
+                </View>
+              </TouchableOpacity>
 
-            {/* Leave Reason */}
-            <Text style={{
-              fontSize: scale(15),
-              color: "#333",
-              marginBottom: 6,
-              marginTop: 10,
-              fontWeight: "600",
-              marginLeft: 25
-            }}>Leave Reason<Text style={{ color: 'red' }}> *</Text></Text>
-            {/* Leave Reason */}
-            <TextInput
-              style={[styles.worksheetInput, reasonError && { borderColor: "red" }]}
-              value={reason}
-              onChangeText={handleReasonChange}
-              placeholder="Enter leave message"
-              placeholderTextColor="#999"
-              multiline
-              textAlignVertical="top"
-            />
-            {reasonError ? (
-              <Text style={{ color: "red", marginLeft: 25, marginTop: 5 }}>
-                {reasonError}
-              </Text>
-            ) : null}
-          </View>
-
-          {/* Buttons */}
-          <View style={styles.btnRow}>
-            {/* Submit Button */}
-            <TouchableOpacity
-              style={[styles.submitBtn, loading && { opacity: 0.6 }]}
-              onPress={submitAttendance}
-              disabled={loading}
-            >
-              <View style={styles.btnContent}>
-                <Image
-                  source={require("../../assets/images/Submit-32.png")}
-                  style={styles.btnIcon}
-                />
-                <Text style={styles.submitText}>Submit</Text>
-              </View>
-            </TouchableOpacity>
-
-            {/* Cancel Button */}
-            <TouchableOpacity style={styles.cancelBtn} onPress={() => navigation.goBack()}>
-              <View style={styles.btnContent}>
-                <Image
-                  source={require("../../assets/images/Cancel-32.png")}
-                  style={styles.btnIcon}
-                />
-                <Text style={styles.cancelText}>Cancel</Text>
-              </View>
-            </TouchableOpacity>
-          </View>
-        </ScrollView>
+              {/* Cancel Button */}
+              <TouchableOpacity style={styles.cancelBtn} onPress={() => navigation.goBack()}>
+                <View style={styles.btnContent}>
+                  <Image
+                    source={require("../../assets/images/Cancel-32.png")}
+                    style={styles.btnIcon}
+                  />
+                  <Text style={styles.cancelText}>Cancel</Text>
+                </View>
+              </TouchableOpacity>
+            </View>
+          </ScrollView>
+        </KeyboardAvoidingView>
         {/* {showDatePicker && (
           <DateTimePicker
             value={selectedDate}
@@ -1783,7 +1795,7 @@ const styles = StyleSheet.create({
     margin: 15
   },
   worksheetInput: {
-    height: 150,          // fixed height to allow scrolling
+    height: 120,
     borderWidth: 1,
     borderColor: "#ccc",
     borderRadius: 10,
@@ -1791,7 +1803,7 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: "#000",
     backgroundColor: "#f9f9f9",
-    margin: 15
+    margin: 15,
   },
 
   submitText: {

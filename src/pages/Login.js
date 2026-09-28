@@ -218,14 +218,13 @@ export default function LoginInScreen() {
 
         <View style={{ alignItems: 'center', justifyContent: 'center', marginTop: 30 }}>
           <Text style={{ color: '#999', fontWeight: 'bold', fontSize: 15 }}>
-            Version 1.2.2
+            Version 1.2.3
           </Text>
         </View>
 
       </ImageBackground>
     </ScrollView>
   );
-
 }
 
 

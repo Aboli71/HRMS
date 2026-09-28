@@ -17,26 +17,17 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useNavigation } from "@react-navigation/native";
 import LinearGradient from "react-native-linear-gradient";
 import { launchImageLibrary } from "react-native-image-picker";
+import DateTimePicker from "@react-native-community/datetimepicker";
 
 export default function UserProfileScreen() {
   const navigation = useNavigation();
-  const [username, setUsername] = useState("Aboli Aher");
-  const [email, setEmail] = useState("Aboliaher@gmail.com");
-  const [phone, setPhone] = useState("9874563210");
-  const [state, setState] = useState("Maharashtra");
-  const [address, setAddress] = useState("");
-  const [pincode, setPincode] = useState("");
-  const [passwordVisible, setPasswordVisible] = useState(false);
+  const [email, setEmail] = useState("");
+  const [phone, setPhone] = useState("");
   const [profileImage, setProfileImage] = useState(null);
   const [uploading, setUploading] = useState(false);
   const [userData, setUserData] = useState(null);
-  const [showStateModal, setShowStateModal] = useState(false);
-  const [showDistrictModal, setShowDistrictModal] = useState(false);
   const [showImageOptions, setShowImageOptions] = useState(false);
   const [showFullImage, setShowFullImage] = useState(false);
-  const [districtList, setDistrictList] = useState([]);
-  const [searchState, setSearchState] = useState("");
-  const [searchDistrict, setSearchDistrict] = useState("");
   const [ifsc_code, setIfscCode] = useState("");
   const [bank_name, setBankName] = useState("");
   const [micrNo, setMicrNo] = useState("");
@@ -48,7 +39,9 @@ export default function UserProfileScreen() {
   const [acc_no, setAcc_No] = useState("");
   const [profileUpdated, setProfileUpdated] = useState(false);
   const [bankUpdated, setBankUpdated] = useState(false);
-
+  const [dob, setDob] = useState("");
+  const [showDatePicker, setShowDatePicker] = useState(false);
+  const [dobUpdated, setDobUpdated] = useState(false);
 
   useEffect(() => {
     const loadUser = async () => {
@@ -58,6 +51,7 @@ export default function UserProfileScreen() {
         setUserData(parsedUser);
         fetchUserProfile(parsedUser.id);
         fetchBankDetails(parsedUser.id); // 🔥 ADD THIS
+        fetchBirthdayDetails(parsedUser.id); // 🔥 ADD THIS
       }
     };
     loadUser();
@@ -82,6 +76,42 @@ export default function UserProfileScreen() {
     }
   };
 
+  const fetchBirthdayDetails = async (userId) => {
+    try {
+      const response = await fetch(
+        `http://163.227.92.37:7888/birthday?user_id=${userId}`
+      );
+
+      const result = await response.json();
+
+      console.log("BIRTHDAY API RESPONSE:", result);
+
+      if (!response.ok) {
+        throw new Error(result.message || "Failed to fetch birthday");
+      }
+
+      if (result?.date_of_birth) {
+        const date = String(result.date_of_birth).substring(0, 10);
+
+        console.log("✅ DOB FROM API:", date);
+
+        setDob(date);
+        setDobUpdated(true);
+      } else {
+        console.log("❌ DOB NOT AVAILABLE");
+
+        setDob("");
+        setDobUpdated(false);
+      }
+
+    } catch (error) {
+      console.log("❌ Fetch birthday details error:", error.message);
+
+      setDob("");
+      setDobUpdated(false);
+    }
+  };
+
   const pickProfileImage = async () => {
     const result = await launchImageLibrary({
       mediaType: "photo",
@@ -91,9 +121,6 @@ export default function UserProfileScreen() {
     if (result.didCancel || !result.assets?.[0]) return;
 
     const img = result.assets[0];
-
-    // show preview instantly
-    // setProfileImage({ uri: img.uri });
 
     // 🔥 UPLOAD TO SERVER
     uploadProfileImage(img);
@@ -177,23 +204,6 @@ export default function UserProfileScreen() {
     }
   };
 
-  const normalizeName = (name = "") =>
-    name
-      .trim()
-      .replace(/\s+/g, " ")
-      .toLowerCase();
-
-  // const isValidFullName = (name) => {
-  //   if (!name) return false;
-
-  //   const parts = name.trim().split(/\s+/);
-
-  //   // Must contain at least First + Last name
-  //   if (parts.length < 2) return false;
-
-  //   // Each part should have at least 2 characters
-  //   return parts.every(part => part.length >= 2);
-  // };
   const isValidFullName = (name) => {
     if (!name) return false;
 
@@ -206,6 +216,67 @@ export default function UserProfileScreen() {
     return parts.every(part => part.length >= 2);
   };
 
+  const submitDOB = async () => {
+    if (!userData?.id) {
+      Alert.alert("Error", "User not found");
+      return false;
+    }
+
+    if (!dob) {
+      Alert.alert("Invalid DOB", "Please select Date of Birth");
+      return false;
+    }
+
+    try {
+      const response = await fetch(
+        "http://163.227.92.37:7888/profile/update-birthday",
+        {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            user_id: userData.id,
+            date_of_birth: dob,
+          }),
+        }
+      );
+
+      const rawText = await response.text();
+
+      console.log("DOB API RAW RESPONSE:", rawText);
+
+      let result;
+
+      try {
+        result = JSON.parse(rawText);
+      } catch (error) {
+        throw new Error("Server returned invalid response");
+      }
+
+      if (!response.ok || !result.success) {
+        throw new Error(
+          result.message || "Failed to update Date of Birth"
+        );
+      }
+
+      console.log("DOB updated successfully:", result);
+
+      setDobUpdated(true);
+
+      return true;
+
+    } catch (error) {
+      console.log("DOB submit error:", error);
+
+      Alert.alert(
+        "Error",
+        error.message || "Failed to update Date of Birth"
+      );
+
+      return false;
+    }
+  };
 
   const submitBankDetails = async () => {
     if (!userData?.id) {
@@ -213,7 +284,53 @@ export default function UserProfileScreen() {
       return;
     }
 
-    console.log("user_id: ", userData.id);
+    console.log("user_id:", userData.id);
+
+    // ==========================================
+    // CHECK WHAT NEEDS TO BE UPDATED
+    // ==========================================
+
+    const dobNeedsUpdate = !dobUpdated;
+    const bankNeedsUpdate = !bankUpdated;
+
+    console.log("DOB needs update:", dobNeedsUpdate);
+    console.log("Bank needs update:", bankNeedsUpdate);
+
+    // ==========================================
+    // UPDATE DOB IF DOB IS NOT AVAILABLE
+    // ==========================================
+
+    if (dobNeedsUpdate) {
+      const dobSuccess = await submitDOB();
+
+      if (!dobSuccess) {
+        return;
+      }
+    }
+
+    // ==========================================
+    // IF BANK DETAILS ALREADY EXIST
+    // THEN ONLY DOB WAS REQUIRED
+    // ==========================================
+
+    if (!bankNeedsUpdate) {
+      Alert.alert(
+        "Success",
+        "Profile details updated successfully!",
+        [
+          {
+            text: "OK",
+            onPress: () => {
+              setDobUpdated(true);
+              setBankUpdated(true);
+              navigation.navigate("Dashboard");
+            },
+          },
+        ]
+      );
+
+      return;
+    }
 
     // 🔴 Full name structure
     if (!isValidFullName(acc_holder_name)) {
@@ -223,19 +340,6 @@ export default function UserProfileScreen() {
       );
       return;
     }
-
-    // 🔴 Username vs Bank Name match
-    const profileName = normalizeName(userData?.name);
-    const bankName = normalizeName(acc_holder_name);
-
-    // if (profileName !== bankName) {
-    //   Alert.alert(
-    //     "Name Mismatch",
-    //     "Account holder name must exactly match your profile username"
-    //   );
-    //   return;
-    // }
-
 
     if (!acc_no || acc_no.length < 9) {
       Alert.alert("Invalid Account Number", "Please enter valid account number");
@@ -299,7 +403,6 @@ export default function UserProfileScreen() {
     }
   };
 
-
   const fetchBankDetails = async (userId) => {
     try {
       const response = await fetch(
@@ -333,17 +436,6 @@ export default function UserProfileScreen() {
     }
   };
 
-
-  // const handleLogout = async () => {
-  //   await AsyncStorage.removeItem("token");
-  //   await AsyncStorage.removeItem("user");
-
-  //   navigation.reset({
-  //     index: 0,
-  //     routes: [{ name: "Login" }],
-  //   });
-  // };
-
   const handleLogout = async () => {
     await AsyncStorage.removeItem("authToken");
     await AsyncStorage.removeItem("user");
@@ -354,12 +446,14 @@ export default function UserProfileScreen() {
     });
   };
 
+  const formatDateToYYYYMMDD = (date) => {
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, "0");
+    const day = String(date.getDate()).padStart(2, "0");
 
-  const statesData = {
-    Maharashtra: true,
-    Gujarat: true,
-    Karnataka: true,
+    return `${year}-${month}-${day}`;
   };
+
   return (
     <View style={{ flex: 1 }}>
       <LinearGradient
@@ -492,15 +586,7 @@ export default function UserProfileScreen() {
 
             <View
               style={styles.inputBox}
-              activeOpacity={0.8}
-            // onPress={() => {
-            //   if (!stateName) {
-            //     Alert.alert("Select State First");
-            //     return;
-            //   }
-            //   setShowDistrictModal(true);
-            // }}
-            >
+              activeOpacity={0.8}>
               <Image
                 source={require("../../assets/images/District-32.png")}
                 style={styles.inputIcon}
@@ -539,6 +625,56 @@ export default function UserProfileScreen() {
 
               <Text style={styles.dropdownArrow}>▼</Text>
             </View>
+
+            {/* DOB */}
+            <Text style={styles.label}>Date of Birth</Text>
+
+            <TouchableOpacity
+              style={styles.inputBox}
+              activeOpacity={0.8}
+              onPress={() => {
+                if (!dobUpdated) {
+                  setShowDatePicker(true);
+                }
+              }}
+            >
+              <Text
+                style={[
+                  styles.input,
+                  {
+                    color: dob ? "#000" : "#999",
+                  },
+                ]}
+              >
+                {dob || "YYYY-MM-DD"}
+              </Text>
+
+              <Text style={styles.dropdownArrow}>📅</Text>
+            </TouchableOpacity>
+
+            {showDatePicker && (
+              <DateTimePicker
+                value={
+                  dob
+                    ? new Date(`${dob}T00:00:00`)
+                    : new Date()
+                }
+                mode="date"
+                display={Platform.OS === "ios" ? "spinner" : "default"}
+                maximumDate={new Date()}
+                onChange={(event, selectedDate) => {
+                  setShowDatePicker(false);
+
+                  if (selectedDate) {
+                    const formattedDate =
+                      formatDateToYYYYMMDD(selectedDate);
+
+                    setDob(formattedDate);
+                    setDobUpdated(false);
+                  }
+                }}
+              />
+            )}
 
             {/* Account Holder Name */}
             <Text style={styles.label}>Account Holder Name</Text>
@@ -584,11 +720,6 @@ export default function UserProfileScreen() {
                   // ✅ Digits only
                   const numericText = text.replace(/[^0-9]/g, "");
                   setAcc_No(numericText);
-
-                  // ✅ Optional API call
-                  // if (numericText.length >= 9 && numericText.length <= 18) {
-                  //   checkAccountNumberApi(numericText);
-                  // }
                 }}
               />
             </View>
@@ -695,11 +826,6 @@ export default function UserProfileScreen() {
                 }}
               >
 
-                {/* <Image
-                  source={require("../../assets/images/District-32.png")}
-                   style={styles.inputIcon}
-                /> */}
-
                 <Text
                   style={[
                     styles.input,
@@ -732,40 +858,8 @@ export default function UserProfileScreen() {
 
             </View>
 
-
-            {/* Address */}
-            {/* <Text style={styles.label}>Address (Full)*</Text>
-            <View style={styles.inputBox}>
-              <Image
-                source={require("../../assets/images/Address-32.png")}
-                style={styles.inputIcon}
-              />
-              <TextInput
-                style={styles.input}
-                placeholder="Enter Address"
-                value={address}
-                onChangeText={setAddress}
-              />
-            </View> */}
-
-            {/* Pincode */}
-            {/* <Text style={styles.label}>Pincode (Optional)</Text>
-            <View style={styles.inputBox}>
-              <Image
-                source={require("../../assets/images/Pincode-32.png")}
-                style={styles.inputIcon}
-              />
-              <TextInput
-                style={styles.input}
-                placeholder="Enter Pincode"
-                keyboardType="number-pad"
-                value={pincode}
-                onChangeText={setPincode}
-              />
-            </View> */}
-
             {/* Buttons */}
-            {!(profileUpdated && bankUpdated) && (
+            {!(profileUpdated && dobUpdated && bankUpdated) && (
               <View style={styles.btnRow}>
                 {/* Submit Button */}
                 <TouchableOpacity
@@ -799,83 +893,6 @@ export default function UserProfileScreen() {
 
           </View>
         </ScrollView>
-
-        {/* State Modal */}
-        {/* <Modal visible={showStateModal} transparent animationType="fade">
-          <View style={styles.modalOverlay}>
-            <View style={styles.modalBox}>
-              <Text style={styles.modalTitle}>Select State</Text> */}
-        {/* Search */}
-        {/* <TextInput
-                placeholder="Search state..."
-                placeholderTextColor="#888"
-                style={styles.modalSearch}
-                value={searchState}
-                onChangeText={setSearchState}
-              />
-              <ScrollView style={{ maxHeight: 300 }}>
-                {Object.keys(statesData)
-                  .filter(item => item.toLowerCase().includes(searchState.toLowerCase()))
-                  .map((item, index) => (
-                    <TouchableOpacity
-                      key={index}
-                      onPress={() => {
-                        setStateName(item);
-                        setDistrict("");
-
-                        // Only Maharashtra loads district API
-                        if (item === "Maharashtra") {
-                          fetchDistrictApi();
-                        } else {
-                          setDistrictList([]);  // Clear for other states
-                        }
-
-                        setShowStateModal(false);
-                        setSearchState("");
-                      }}
-                    >
-                      <Text style={styles.modalItem}>{item}</Text>
-                    </TouchableOpacity>
-                  ))
-                }
-              </ScrollView>
-            </View>
-          </View>
-        </Modal> */}
-
-        {/* DISTRICT MODAL */}
-        {/* <Modal visible={showDistrictModal} transparent animationType="fade">
-          <View style={styles.modalOverlay}>
-            <View style={styles.modalBox}>
-              <Text style={styles.modalTitle}>Select District</Text>
-
-              <TextInput
-                placeholder="Search district..."
-                placeholderTextColor="#888"
-                style={styles.modalSearch}
-                value={searchDistrict}
-                onChangeText={setSearchDistrict}
-              />
-
-              <ScrollView style={{ maxHeight: 300 }}>
-                {districtList
-                  .filter((i) => i.toLowerCase().includes(searchDistrict.toLowerCase()))
-                  .map((item, index) => (
-                    <TouchableOpacity
-                      key={index}
-                      onPress={() => {
-                        setDistrict(item);
-                        setShowDistrictModal(false);
-                        setSearchDistrict("");
-                      }}
-                    >
-                      <Text style={styles.modalItem}>{item}</Text>
-                    </TouchableOpacity>
-                  ))}
-              </ScrollView>
-            </View>
-          </View>
-        </Modal> */}
 
         {/* IMAGE OPTIONS */}
         <Modal visible={showImageOptions} transparent animationType="fade">

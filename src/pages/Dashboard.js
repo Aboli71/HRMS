@@ -1,4 +1,4 @@
-import React, { useCallback, useState, useEffect } from "react";
+// import React, { useCallback, useState, useEffect } from "react";
 // import {
 //     View,
 //     Text,
@@ -313,6 +313,13 @@ import React, { useCallback, useState, useEffect } from "react";
 //         marginTop: 3,
 //     },
 // });
+
+import React, {
+    useState,
+    useEffect,
+    useCallback,
+} from 'react';
+
 import {
     View,
     Text,
@@ -324,13 +331,17 @@ import {
     BackHandler,
     Modal,
     Alert,
-
+    ImageBackground,
 } from 'react-native';
+
 import LinearGradient from 'react-native-linear-gradient';
 import BottomNav from "../Component/BottomNav";
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useNavigation } from '@react-navigation/native';
 // import UserBdayWishesh, { isBirthdayToday } from "./UserPages/UserBdayWishesh";
+
+// 🎂 Birthday popup should show only ONCE during one app session
+let birthdayPopupShownThisSession = false;
 
 const getEmployeeList = (result) => {
     if (Array.isArray(result)) return result;
@@ -363,58 +374,186 @@ export default function DashboardScreen() {
         return () => backHandler.remove();
     }, []);
 
-    useEffect(() => {
-        const showPopup = async () => {
-            const storedUser = await AsyncStorage.getItem("user");
 
-            if (storedUser) {
-                const user = JSON.parse(storedUser);
+    // -----------------------------
+    // GET TODAY'S BIRTHDAY
+    // -----------------------------
+    const loadBirthdayWishes = useCallback(async () => {
 
-                setBirthdayUsers([user]);
-                setBirthdayIndex(0);
-                setShowBirthdayPopup(true);
-            }
-        };
-
-        showPopup();
-    }, []);
-
-    // const loadBirthdayWishes = useCallback(async (loggedInUser) => {
-    //     try {
-    //         const response = await fetch("http://163.227.92.37:7888/employees");
-    //         const result = await response.json();
-    //         const employees = getEmployeeList(result);
-    //         const todayBirthdayUsers = employees.filter((employee) =>
-    //             isBirthdayToday(employee)
-    //         );
-
-    //         if (todayBirthdayUsers.length > 0) {
-    //             setBirthdayUsers(todayBirthdayUsers);
-    //             setBirthdayIndex(0);
-    //             setShowBirthdayPopup(true);
-    //             return;
-    //         }
-    //     } catch (error) {
-    //         console.log("Birthday employees fetch error:", error);
-    //     }
-
-    //     if (isBirthdayToday(loggedInUser)) {
-    //         setBirthdayUsers([loggedInUser]);
-    //         setBirthdayIndex(0);
-    //         setShowBirthdayPopup(true);
-    //     }
-    // }, []);
-
-    const loadBirthdayWishes = useCallback(async (loggedInUser) => {
         try {
-            // Always show popup for logged-in user
-            setBirthdayUsers([loggedInUser]);
-            setBirthdayIndex(0);
-            setShowBirthdayPopup(true);
+
+            // ==================================================
+            // STOP IF POPUP ALREADY SHOWN DURING THIS APP SESSION
+            // ==================================================
+            if (birthdayPopupShownThisSession) {
+
+                console.log(
+                    "🎂 Birthday popup already shown - skipping"
+                );
+
+                return;
+            }
+
+
+            console.log("🎂 Calling Birthday API...");
+
+
+            // -----------------------------
+            // GET LOGGED-IN USER
+            // -----------------------------
+            const storedUser =
+                await AsyncStorage.getItem("user");
+
+
+            if (!storedUser) {
+
+                console.log("❌ User not found in AsyncStorage");
+
+                setBirthdayUsers([]);
+                setBirthdayIndex(0);
+                setShowBirthdayPopup(false);
+
+                return;
+            }
+
+
+            const user = JSON.parse(storedUser);
+            const userId = user?.id;
+
+
+            console.log(
+                "🎂 Logged-in User ID:",
+                userId
+            );
+
+
+            if (!userId) {
+
+                console.log("❌ User ID not found");
+
+                setBirthdayUsers([]);
+                setBirthdayIndex(0);
+                setShowBirthdayPopup(false);
+
+                return;
+            }
+
+
+            // -----------------------------
+            // BIRTHDAY API
+            // -----------------------------
+            const response = await fetch(
+                `http://163.227.92.37:7888/birthday?user_id=${userId}`,
+                {
+                    method: "GET",
+                    headers: {
+                        Accept: "application/json",
+                    },
+                }
+            );
+
+
+            const result = await response.json();
+
+
+            console.log(
+                "🎂 Birthday API Response:",
+                result
+            );
+
+
+            if (!response.ok) {
+
+                throw new Error(
+                    result?.message ||
+                    "Birthday API failed"
+                );
+            }
+
+
+            // -----------------------------
+            // TODAY'S BIRTHDAY
+            // -----------------------------
+            if (
+                result?.success === true &&
+                result?.showBirthday === true
+            ) {
+
+                console.log(
+                    "🎂🎉 TODAY IS USER'S BIRTHDAY"
+                );
+
+
+                const birthdayUser = {
+                    ...result?.user,
+                    date_of_birth:
+                        result?.date_of_birth,
+                };
+
+
+                setBirthdayUsers([birthdayUser]);
+                setBirthdayIndex(0);
+
+
+                // ==================================================
+                // IMPORTANT:
+                // MARK AS SHOWN BEFORE OPENING MODAL
+                // ==================================================
+                birthdayPopupShownThisSession = true;
+
+
+                // ==================================================
+                // SHOW POPUP
+                // ==================================================
+                setShowBirthdayPopup(true);
+
+            } else {
+
+                console.log(
+                    "🎂 Today is NOT user's birthday"
+                );
+
+                setBirthdayUsers([]);
+                setBirthdayIndex(0);
+                setShowBirthdayPopup(false);
+            }
+
         } catch (error) {
-            console.log("Birthday popup error:", error);
+
+            console.log(
+                "❌ Birthday API Error:",
+                error
+            );
+
+            setBirthdayUsers([]);
+            setBirthdayIndex(0);
+            setShowBirthdayPopup(false);
         }
+
     }, []);
+
+
+    useEffect(() => {
+        loadBirthdayWishes();
+    }, [loadBirthdayWishes]);
+
+
+    // -----------------------------
+    // CLOSE BIRTHDAY POPUP
+    // -----------------------------
+    const closeBirthdayPopup = () => {
+
+        console.log(
+            "❌ Birthday popup closed"
+        );
+
+        setShowBirthdayPopup(false);
+        setBirthdayUsers([]);
+        setBirthdayIndex(0);
+
+        // ❌ DO NOT RESET:
+        // birthdayPopupShownThisSession = false;
+    };
 
     useEffect(() => {
         loadUserAndCheckAttendance();
@@ -453,14 +592,7 @@ export default function DashboardScreen() {
         }
     };
 
-    const closeBirthdayPopup = () => {
-        console.log("❌ Close button pressed");
-
-        setShowBirthdayPopup(false);
-        setBirthdayUsers([]);
-        setBirthdayIndex(0);
-    };
-
+    
 
     if (loading) {
         return (
@@ -576,54 +708,81 @@ export default function DashboardScreen() {
                         </TouchableOpacity>
 
                     </ScrollView>
-                    {/* <Modal
+                    <Modal
                         visible={showBirthdayPopup}
-                        transparent
+                        transparent={true}
                         animationType="fade"
-                    > */}
-                        {/* <View style={styles.overlay}> */}
-                            {/* <View style={styles.birthdayCard}> */}
+                        onRequestClose={closeBirthdayPopup}
+                    >
+                        <View style={styles.overlay}>
 
-                                {/* <TouchableOpacity
+                            <ImageBackground
+                                source={require("../assets/images/Birthday-Wishes-bg-Final.png")}
+                                style={styles.birthdayCard}
+                                imageStyle={styles.birthdayBackgroundImage}
+                                resizeMode="cover"
+                            >
+
+                                {/* CLOSE BUTTON */}
+                                <TouchableOpacity
                                     style={styles.closeBtn}
                                     onPress={closeBirthdayPopup}
                                 >
-                                    <Text style={{ color: "#fff", fontSize: 18 }}>✕</Text>
-                                </TouchableOpacity> */}
+                                    <Text style={styles.closeText}>✕</Text>
+                                </TouchableOpacity>
 
-                                {/* <Image
-                                    source={{
-                                        uri: `${PROFILE_BASE_URL}${birthdayUsers[birthdayIndex]?.profile_image}`
-                                    }}
-                                    style={styles.profileImage}
-                                /> */}
 
-                                {/* <Text style={styles.heading}>
-                                    Happy Birthday,
-                                </Text>
+                                {/* USER PHOTO + FULL NAME */}
+                                <View style={styles.profileSection}>
 
-                                <Text style={styles.name}>
-                                    {birthdayUsers[birthdayIndex]?.fullname ||
+                                    {/* USER PHOTO */}
+                                    <View style={styles.profileContainer}>
+
+                                        {birthdayUsers[birthdayIndex]?.profile_image ? (
+
+                                            <Image
+                                                source={{
+                                                    uri: `${PROFILE_BASE_URL}${birthdayUsers[birthdayIndex]?.profile_image}`
+                                                }}
+                                                style={styles.profileImage}
+                                            />
+
+                                        ) : (
+
+                                            <View style={styles.profilePlaceholder}>
+
+                                                <Text style={styles.profilePlaceholderText}>
+                                                    {(
+                                                        birthdayUsers[birthdayIndex]?.fullname ||
+                                                        birthdayUsers[birthdayIndex]?.name ||
+                                                        "U"
+                                                    )
+                                                        .charAt(0)
+                                                        .toUpperCase()}
+                                                </Text>
+
+                                            </View>
+
+                                        )}
+
+                                    </View>
+
+                                </View>
+
+
+                                {/* FULL NAME */}
+                                <Text
+                                    style={styles.userFullName}
+                                    numberOfLines={2}
+                                >
+                                    {birthdayUsers[birthdayIndex]?.username ||
                                         birthdayUsers[birthdayIndex]?.name}
                                 </Text>
 
-                                <Text style={styles.message}>
-                                    Today is all about celebrating you and the amazing
-                                    energy you bring to our team every single day.
-                                </Text>
+                            </ImageBackground>
 
-                                <Image
-                                    source={require("../assets/images/Cake.png")}
-                                    style={styles.cake}
-                                />
-
-                                <Text style={styles.company}>
-                                    - Softmate Systems LLP -
-                                </Text> */}
-
-                            {/* </View> */}
-                        {/* </View> */}
-                    {/* </Modal> */}
+                        </View>
+                    </Modal>
                 </View>
                 <BottomNav active="home" />
             </ScrollView>
@@ -753,5 +912,101 @@ const styles = StyleSheet.create({
         fontSize: 12,
         color: '#E53935',
         marginTop: 3,
+    },
+    /* ---------------- BIRTHDAY MODAL ---------------- */
+
+    overlay: {
+        flex: 1,
+        backgroundColor: 'rgba(0,0,0,0.65)',
+        justifyContent: 'center',
+        alignItems: 'center',
+        paddingHorizontal: 15,
+    },
+
+    birthdayCard: {
+        width: '100%',
+        maxWidth: 420,
+        aspectRatio: 923 / 1270,
+        overflow: 'hidden',
+        borderRadius: 35,
+        position: 'relative',
+    },
+
+    birthdayBackgroundImage: {
+        borderRadius: 35,
+    },
+
+    closeBtn: {
+        position: 'absolute',
+        top: 12,
+        right: 12,
+        width: 35,
+        height: 35,
+        borderRadius: 18,
+        backgroundColor: 'rgba(0,0,0,0.45)',
+        justifyContent: 'center',
+        alignItems: 'center',
+        zIndex: 20,
+    },
+
+    closeText: {
+        color: '#FFFFFF',
+        fontSize: 20,
+        fontWeight: '700',
+    },
+
+    profileContainer: {
+        position: 'absolute',
+        top: '12%',
+        left: 0,
+        right: 0,
+        alignItems: 'center',
+        zIndex: 10,
+        marginTop: 30,
+    },
+
+    profileImage: {
+        width: 90,
+        height: 90,
+        borderRadius: 45,
+        borderWidth: 4,
+        borderColor: '#FFFFFF',
+        backgroundColor: '#FFFFFF',
+        marginBottom: -50,
+    },
+
+    profilePlaceholder: {
+        width: 90,
+        height: 90,
+        borderRadius: 45,
+        borderWidth: 4,
+        borderColor: '#FFFFFF',
+        backgroundColor: '#E73C3C',
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+
+    profilePlaceholderText: {
+        color: '#FFFFFF',
+        fontSize: 32,
+        fontWeight: '700',
+    },
+
+    userFullName: {
+        position: 'absolute',
+        top: '35%',
+        left: 25,
+        right: 20,
+        textAlign: 'center',
+        color: '#ffe270',
+        fontSize: 23,
+        fontWeight: '700',
+        zIndex: 10,
+        textShadowColor: 'rgba(0,0,0,0.3)',
+        textShadowOffset: {
+            width: 1,
+            height: 1,
+        },
+        textShadowRadius: 3,
     },
 });
